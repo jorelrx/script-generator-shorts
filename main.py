@@ -1,10 +1,10 @@
+import json
 import os
+
 from dotenv import load_dotenv
 from google_genai import GoogleGenAI
 from text_to_speech import TextToSpeech
-from image_creator import ImageCreator
 from video_editor import VideoEditor
-from youtube_uploader import YouTubeUploader
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -24,22 +24,28 @@ def main():
     googleGenerator = GoogleGenAI(GOOGLE_API_KEY)
 
     # 1. Gerar o roteiro
-    script = googleGenerator.generate_script()
+    script_json = googleGenerator.generate_script()
+    script = json.loads(script_json)
     print("Roteiro gerado:", script)
-
-    # 2. Converter texto em audio
-    tts = TextToSpeech(ELEVENLABS_API_KEY)
-    audio_path = "audio.mp3"
-    audio_file = tts.convert_text_to_speech(script, audio_path)
 
     # 3. Gerar imagens
     images = []
-    while len(images) < IMAGE_COUNT:
-        image_prompt = googleGenerator.generate_image_prompt()
+    for text in script['image_texts']:
+        print("Gerando imagem para:", text)
+        image_prompt = googleGenerator.generate_image_prompt(text)
+        print("Prompt gerado:", image_prompt)
         image = googleGenerator.generate_image(image_prompt)
         if image:
             images.append(image)
             print(f"Imagem {len(images)} gerada.")
+
+    # 2. Converter os textos em audios
+    tts = TextToSpeech(ELEVENLABS_API_KEY)
+    audio_paths = []
+    for i, text in enumerate(script['scripts']):
+        audio_path = f"audio_{i}.mp3"
+        tts.convert_text_to_speech(text, audio_path)
+        audio_paths.append(audio_path)
             
     # Baixar as imagens
     image_paths = []
@@ -50,7 +56,7 @@ def main():
 
     # 4. Criar vídeo
     editor = VideoEditor()
-    editor.create_video(image_paths, audio_path)
+    editor.create_video(image_paths, audio_paths)
 
 if __name__ == "__main__":
     main()

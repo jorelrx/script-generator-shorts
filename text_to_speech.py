@@ -4,7 +4,7 @@ class TextToSpeech:
     def __init__(self, api_key: str):
         self.api_key = api_key
     
-    def convert_text_to_speech(self, text: str, output_path: str, voice: str = "IKne3meq5aSn9XLyUdCD"):
+    def convert_text_to_speech(self, text: str, output_path: str, voice: str = "IKne3meq5aSn9XLyUdCD", language: str = "pt-BR"):
         try:
             client = ElevenLabs(
                 api_key=self.api_key,
