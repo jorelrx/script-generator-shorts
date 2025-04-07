@@ -1,8 +1,11 @@
+import os
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from PIL import Image
 from PIL import ImageFile
 from io import BytesIO
+import glob
 import json
 import re
 
@@ -15,6 +18,22 @@ class GoogleGenAI:
     
     def generate_script(self, prompt: str = "Crie um texto motivacional.", max_tokens: int = 8192) -> str:
         """Generate a motivational script using Google GenAI."""
+        video_scripts = []
+        for script_path in glob.glob("videos/*/input/script/script_short.txt"):
+            with open(script_path, "r", encoding="utf-8") as file:
+                video_scripts.append(file.read().strip())
+
+        # Formata o histórico como mensagens anteriores da IA
+        history_messages = [
+            types.Content(role="model", parts=[types.Part(text=h)]) for h in video_scripts
+        ]
+
+        # Mensagem atual do usuário
+        user_prompt = types.Content(role="user", parts=[types.Part(text=prompt)])
+
+        # Junta as mensagens do histórico + prompt atual
+        full_conversation = history_messages + [user_prompt]
+
         response = self.client.models.generate_content(
             model=self.model_text,
             config=types.GenerateContentConfig(
@@ -27,6 +46,7 @@ class GoogleGenAI:
 
 - topic: Tópico do Short, 
 - title: Título do Short, 
+- video_name: Nome do vídeo, por exemplo, 'superacao_e_confianca',
 - central_idea: Ideia central,
 - scripts: Trechos do roteiro separados em uma lista,
 - image_texts: Para cada item no 'scripts', deve ter um 'image_texts' com a descrição da imagem que vai aparecer durante o item do 'script' equivalente.
@@ -35,6 +55,7 @@ Deve retornar um json em formato string ->
 {
     "topic": "",
     "title": "",
+    "video_name": "",
     "central_idea": "",
     "scripts":  ["Item descrecendo um trecho do roteiro"]
     "image_texts": ["Item descrevendo imagem que equivale ao item em 'script'"]
@@ -42,7 +63,7 @@ Deve retornar um json em formato string ->
 
 """
             ),
-            contents=prompt,
+            contents=full_conversation,
         )
 
         json_string = re.sub(r"```json|```", "", response.text).strip()
@@ -92,3 +113,12 @@ Praia: Areia com textura fina, ondas quebrando na praia, coqueiros na orla"""
         except Exception as e:
             print(f"An error occurred: {e}")
         return None
+    
+if __name__ == "__main__":
+    load_dotenv()
+    # Example usage
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+    googleGenAI = GoogleGenAI(api_key=GOOGLE_API_KEY)
+    script_json = googleGenAI.generate_script()
+    script = json.loads(script_json)
+    print("Roteiro gerado:", script)
