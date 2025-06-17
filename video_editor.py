@@ -15,7 +15,7 @@ class VideoEditor:
         audio = MP3(audio_path)
         return audio.info.length
 
-    def create_video(self, video_name: str, fps: int = 30):
+    def create_video(self, video_name: str, video_type: str, fps: int = 30):
         """
         Cria um vídeo com base em imagens e áudios encontrados nos diretórios especificados.
         Adiciona um áudio de fundo, transições entre os vídeos gerados e legendas.
@@ -23,7 +23,7 @@ class VideoEditor:
         :param video_name: Nome do vídeo (usado para localizar os arquivos)
         :param fps: Frames por segundo do vídeo
         """
-        base_dir = f"videos/{video_name}"
+        base_dir = f"videos/{video_type}/{video_name}"
         img_dir = f"{base_dir}/input/image"
         audio_dir = f"{base_dir}/input/audio"
         backsong_path = "assets/backsong.mp3"
@@ -86,21 +86,21 @@ class VideoEditor:
         combined_video = CompositeVideoClip(final_clips)
 
         # Adiciona o áudio ao vídeo final
-        self.add_audio(audio_paths, backsong_path, combined_video, video_name)
+        self.add_audio(audio_paths, backsong_path, combined_video, video_name, video_type)
 
         # Gera legendas automaticamente
-        subtitles = self.generate_subtitles(f"videos/{video_name}/output/{video_name}.mp4")
+        subtitles = self.generate_subtitles(f"videos/{video_type}/{video_name}/output/{video_name}.mp4")
 
         # Adiciona legendas ao vídeo final
         self.add_subtitles(
-            video_path=f"videos/{video_name}/output/{video_name}.mp4",
+            video_path=f"videos/{video_type}/{video_name}/output/{video_name}.mp4",
             subtitles=subtitles,
-            output_path=f"videos/{video_name}/output/{video_name}_with_subtitles.mp4"
+            output_path=f"videos/{video_type}/{video_name}/output/{video_name}_with_subtitles.mp4"
         )
 
         print(f"Vídeo com legendas salvo em 'videos/{video_name}/output/{video_name}_with_subtitles.mp4'")
 
-    def add_audio(self, audio_paths: list[str], backsong_path: str, video: CompositeVideoClip, video_name: str):
+    def add_audio(self, audio_paths: list[str], backsong_path: str, video: CompositeVideoClip, video_name: str, video_type: str):
         """
         Adiciona os áudios ao vídeo final, sobrepondo-os ao áudio de fundo (backsong).
         O backsong continua tocando enquanto os áudios individuais são reproduzidos.
@@ -119,19 +119,22 @@ class VideoEditor:
             audio_clips.append(audio_clip)
             start_time += audio_duration
 
-        # Adiciona o áudio de fundo (backsong) para toda a duração do vídeo
-        backsong = AudioFileClip(backsong_path).with_volume_scaled(0.4).subclipped(0, video.duration)
-
-        # Combina o backsong com os áudios individuais
-        final_audio = CompositeAudioClip([backsong] + audio_clips)
-
         # Define o áudio combinado no vídeo
-        final_video = video.with_audio(final_audio)
+        if video_type == "motivacional":
+            # Adiciona o áudio de fundo (backsong) para toda a duração do vídeo
+            backsong = AudioFileClip(backsong_path).with_volume_scaled(0.4).subclipped(0, video.duration)
+
+            # Combina o backsong com os áudios individuais
+            final_audio = CompositeAudioClip([backsong] + audio_clips)
+            final_video = video.with_audio(final_audio)
+        elif video_type == "infantil":
+            final_audio = CompositeAudioClip(audio_clips)
+            final_video = video.with_audio(final_audio)
+            
         # Cria o diretório de saída, se não existir
-        output_dir = os.path.dirname(f"videos/{video_name}/output/")
+        output_dir = os.path.dirname(f"videos/{video_type}/{video_name}/output/")
         os.makedirs(output_dir, exist_ok=True)
-        video_path = os.path.join(output_dir, f"{video_name}.mp4")
-        final_video.write_videofile(f"videos/{video_name}/output/{video_name}.mp4", codec="libx264", fps=30)
+        final_video.write_videofile(f"videos/{video_type}/{video_name}/output/{video_name}.mp4", codec="libx264", fps=30)
 
     def add_subtitles(self, video_path: str, subtitles: list[tuple[str, float, float]], output_path: str = None):
         """
@@ -151,8 +154,7 @@ class VideoEditor:
                     text=text, 
                     size=(864, None), 
                     font_size=48, 
-                    color='#fff', 
-                    bg_color='black', 
+                    color='#fff',
                     method='caption',
                     margin=(0, 10),
                     horizontal_align='center',
@@ -169,7 +171,7 @@ class VideoEditor:
         output_path = output_path or video_path
         final_video.write_videofile(output_path, codec="libx264", fps=30)
 
-    def generate_subtitles(self, video_path: str, max_words: int = 8, output_path: str = None) -> list[tuple[str, float, float]]:
+    def generate_subtitles(self, video_path: str, max_words: int = 3, output_path: str = None) -> list[tuple[str, float, float]]:
         """
         Gera legendas automaticamente a partir do áudio de um vídeo usando OpenAI Whisper,
         com limite de palavras por segmento e usando word_timestamps para precisão.
@@ -228,6 +230,6 @@ class VideoEditor:
 
 if __name__ == "__main__":
     editor = VideoEditor()
-    video_name = "example_video"
-    editor.create_video(video_name)
+    video_name = "liberte_se"
+    editor.create_video(video_name, "motivacional")
     print(f"Vídeo '{video_name}' criado com sucesso!")

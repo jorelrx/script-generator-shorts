@@ -18,6 +18,9 @@ class TextToSpeech:
                 model_id="eleven_multilingual_v2",
             )
 
+            if audio is None:
+                return None
+
             # Salvar áudio em arquivo
             with open(output_path, "wb") as f:
                 for chunk in audio:
@@ -26,7 +29,7 @@ class TextToSpeech:
 
             return output_path
         except Exception as e:
-            return f"Erro na requisição: {e}"
+            return None
 
 if __name__ == "__main__":
     load_dotenv()

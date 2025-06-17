@@ -68,7 +68,8 @@ class YouTubeUploader:
         description: str,
         tags: list,
         category_id: str = "22",
-        privacy_status: str = "unlisted"
+        privacy_status: str = "unlisted",
+        publish_at: str = None,
     ):
         """
         Realiza o upload de um vídeo para o YouTube.
@@ -80,6 +81,7 @@ class YouTubeUploader:
             tags (list): Lista de tags (palavras-chave) para o vídeo.
             category_id (str, optional): ID da categoria do vídeo (padrão: "22").
             privacy_status (str, optional): Status de privacidade: "public", "private", "unlisted".
+            publish_at (str, optional): Data e hora para agendar a publicação (formato ISO 8601).
 
         Returns:
             dict: Resposta da API com os dados do vídeo enviado, incluindo o vídeo ID.
@@ -92,7 +94,8 @@ class YouTubeUploader:
                 "categoryId": category_id
             },
             "status": {
-                "privacyStatus": privacy_status
+                "privacyStatus": privacy_status,
+                "publishAt": publish_at
             }
         }
         
@@ -114,8 +117,8 @@ if __name__ == "__main__":
     Realiza o upload de um vídeo chamado 'meu_video.mp4'.
     """
     uploader = YouTubeUploader(
-        client_secrets_file="assets/client_secret.json",
-        credentials_file="credentials_token.pickle"
+        client_secrets_file="channels/canal_motivacional/client_secret_motivacional.json",
+        credentials_file="channels/canal_motivacional/credentials_token.pickle"
     )
 
     tags = [
